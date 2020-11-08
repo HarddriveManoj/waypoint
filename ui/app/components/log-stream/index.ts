@@ -1,5 +1,6 @@
 import Component from '@glimmer/component';
 import { tracked } from '@glimmer/tracking';
+import { action } from '@ember/object';
 import ApiService from 'waypoint/services/api';
 import { inject as service } from '@ember/service';
 import { GetLogStreamRequest, LogBatch } from 'waypoint-pb';
@@ -12,6 +13,7 @@ interface LogStreamArgs {
 export default class LogStream extends Component<LogStreamArgs> {
   @service api!: ApiService;
   @tracked lines: string[];
+  @tracked isFollowingLogs = true;
 
   constructor(owner: any, args: any) {
     super(owner, args);
@@ -21,6 +23,32 @@ export default class LogStream extends Component<LogStreamArgs> {
 
   addLine(line: string) {
     this.lines = [...this.lines, line];
+  }
+
+  @action
+  initialScroll(element: any) {
+    element.scrollIntoView();
+  }
+
+  @action
+  followLogs(element: any) {
+    element.target.parentElement.scroll(0, element.target.parentElement.scrollHeight);
+  }
+
+  @action
+  newLineAdded(element: any) {
+    if (this.isFollowingLogs === true) {
+      element.scrollIntoView();
+    }
+  }
+
+  @action
+  onScroll(element: any) {
+    if (element.target.scrollHeight - element.target.offsetHeight === element.target.scrollTop) {
+      this.isFollowingLogs = true;
+    } else {
+      this.isFollowingLogs = false;
+    }
   }
 
   async start() {
