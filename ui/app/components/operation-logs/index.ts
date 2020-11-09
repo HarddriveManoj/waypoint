@@ -1,6 +1,8 @@
 import Component from '@glimmer/component';
 import { tracked } from '@glimmer/tracking';
 import { action } from '@ember/object';
+import { later } from '@ember/runloop';
+
 import ApiService from 'waypoint/services/api';
 import { inject as service } from '@ember/service';
 import { GetJobStreamRequest, GetJobStreamResponse } from 'waypoint-pb';
@@ -14,6 +16,7 @@ export default class OperationLogs extends Component<OperationLogsArgs> {
 
   @tracked logLines: object[];
   @tracked isFollowingLogs = true;
+  @tracked badgeCount = 0;
 
   // https://github.com/hashicorp/waypoint-plugin-sdk/blob/baf566811af680c5df138f9915d756f67d271b1a/terminal/ui.go#L126-L135
   headerStyle = 'header';
@@ -38,11 +41,16 @@ export default class OperationLogs extends Component<OperationLogsArgs> {
 
   addLogLine(t: string, logLine: object) {
     this.logLines = [...this.logLines, { type: t, logLine: logLine }];
+    if (this.isFollowingLogs === false) {
+      this.badgeCount = this.badgeCount + 1;
+    }
   }
 
   @action
   initialScroll(element: any) {
-    element.scrollIntoView();
+    later(() => {
+      element.scrollIntoView();
+    }, 100);
   }
 
   @action
@@ -54,6 +62,7 @@ export default class OperationLogs extends Component<OperationLogsArgs> {
   newLineAdded(element: any) {
     if (this.isFollowingLogs === true) {
       element.scrollIntoView();
+      this.badgeCount = 0;
     }
   }
 
@@ -61,6 +70,7 @@ export default class OperationLogs extends Component<OperationLogsArgs> {
   onScroll(element: any) {
     if (element.target.scrollHeight - element.target.offsetHeight === element.target.scrollTop) {
       this.isFollowingLogs = true;
+      this.badgeCount = 0;
     } else {
       this.isFollowingLogs = false;
     }
